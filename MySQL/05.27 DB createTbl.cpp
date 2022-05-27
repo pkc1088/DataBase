@@ -1,4 +1,4 @@
 SELECT memberName, memberAddress FROM memberTBL;
-SELECT * FROM memberTBL WHERE memberName = '»ó´ÞÀÌ';
+SELECT * FROM memberTBL WHERE memberName = 'Â»Ã³Â´ÃžÃ€ÃŒ';
 
 CREATE TABLE myTable(id int);
