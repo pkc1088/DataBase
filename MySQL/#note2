@@ -1,0 +1,46 @@
+DELIMITER $$ 
+use `dbhw4`$$
+CREATE DEFINER = CURRENT_USER TRIGGER `dbhw4`. `sp_AFTER_INSERT` 
+    AFTER INSERT ON `sp` FOR EACH ROW
+BEGIN 
+	insert into stock(pno, currentQty) values(new.pno, new.qty) 
+		ON DUPLICATE KEY UPDATE currentQty = currentQty + new.qty;
+END $$ 
+DELIMITER ;
+
+
+DELIMITER $$ 
+use `dbhw4`$$
+CREATE DEFINER = CURRENT_USER TRIGGER `dbhw4`. `order_AFTER_INSERT` 
+    AFTER INSERT ON `order` FOR EACH ROW
+BEGIN 
+	insert into sales(pno, salesQty, salesDate) values(new.pno, new.orderQty, new.orderDate) 
+		ON DUPLICATE KEY UPDATE salesQty = salesQty + new.orderQty;
+    UPDATE stock set currentQty =  currentQty - new.orderQty where pno = new.pno; #subtract stock table qty
+END $$ 
+DELIMITER ;
+
+
+DELIMITER $$ 
+use `dbhw4`$$
+CREATE DEFINER = CURRENT_USER TRIGGER `dbhw4`. `orderCanecl_BEFORE_Delete` 
+    BEFORE DELETE ON `order` FOR EACH ROW
+BEGIN 
+	insert into orderCancel values(old.ono, old.pno, old.orderQty, old.orderDate, old.orderDate, 'some reasons') 
+		ON DUPLICATE KEY UPDATE orderQty = orderQty + old.orderQty;
+	UPDATE sales set salesQty =  salesQty + old.orderQty where pno = old.pno; #re-add sales table qty
+    UPDATE stock set currentQty =  currentQty + old.orderQty where pno = old.pno; #re-add stock table qty
+END $$ 
+DELIMITER ;
+
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `getSelectedTables`()
+BEGIN
+	select * from s;
+    select * from p;
+    select * from sp;
+    select * from `dbhw4`.`order`;
+    select * from stock;
+    select * from sales;
+    select * from orderCancel;
+END
