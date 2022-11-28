@@ -1,0 +1,14 @@
+CREATE DEFINER=`root`@`localhost` PROCEDURE `getQtyGrade`(
+	in base1 int, in base2 int)
+BEGIN
+	declare query varchar(100);
+    declare Agrade int;
+    declare Bgrade int;
+    set @Agrade = base1;
+    set @Bgrade = base2;
+    set @query = concat('select pno, sum(qty) as tot_qty, getGrade(?, ?, sum(qty)) as grade from spj group by pno');
+    select @query as 'statement';
+	prepare st from @query;
+    execute st using  @Agrade, @Bgrade;
+    deallocate prepare st;
+END
