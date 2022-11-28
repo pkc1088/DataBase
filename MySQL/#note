@@ -12,3 +12,14 @@ BEGIN
     execute st using  @Agrade, @Bgrade;
     deallocate prepare st;
 END
+
+CREATE DEFINER=`root`@`localhost` FUNCTION `getGrade`(grade_A int, grade_B int, qty int) RETURNS varchar(10) CHARSET utf8mb4
+    DETERMINISTIC
+BEGIN
+	declare grade varchar(10);
+    if qty > grade_A then set grade = 'A';
+    elseif qty > grade_B then set grade = 'B';
+    else set grade = 'C';
+    end if;
+RETURN grade;
+END
