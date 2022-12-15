@@ -1,25 +1,47 @@
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getQtyGrade`(
-	in base1 int, in base2 int)
+CREATE DEFINER=`root`@`localhost` PROCEDURE `getSelectedTables`()
 BEGIN
-	declare query varchar(100);
-    declare Agrade int;
-    declare Bgrade int;
-    set @Agrade = base1;
-    set @Bgrade = base2;
-    set @query = concat('select pno, sum(qty) as tot_qty, getGrade(?, ?, sum(qty)) as grade from spj group by pno');
-    select @query as 'statement';
-	prepare st from @query;
-    execute st using  @Agrade, @Bgrade;
-    deallocate prepare st;
+	select * from s;
+    select * from p;
+    select * from sp;
+    select * from `dbfinal`.`order`;
+    select * from stock;
+    select * from sales;
+    select * from orderCancel;
 END
 
-CREATE DEFINER=`root`@`localhost` FUNCTION `getGrade`(grade_A int, grade_B int, qty int) RETURNS varchar(10) CHARSET utf8mb4
-    DETERMINISTIC
-BEGIN
-	declare grade varchar(10);
-    if qty > grade_A then set grade = 'A';
-    elseif qty > grade_B then set grade = 'B';
-    else set grade = 'C';
-    end if;
-RETURN grade;
-END
+DELIMITER $$ 
+use `dbfinal`$$
+CREATE DEFINER = CURRENT_USER TRIGGER `dbfinal`. `sp_AFTER_INSERT` 
+    AFTER INSERT ON `sp` FOR EACH ROW
+BEGIN 
+	insert into stock(pno, currentQty) values(new.pno, new.qty) 
+		ON DUPLICATE KEY UPDATE currentQty = currentQty + new.qty;
+END $$ 
+DELIMITER ;
+
+
+DELIMITER $$ 
+use `dbfinal`$$
+CREATE DEFINER = CURRENT_USER TRIGGER `dbfinal`. `order_AFTER_INSERT` 
+    AFTER INSERT ON `order` FOR EACH ROW
+BEGIN 
+	insert into sales(pno, salesQty, salesDate) values(new.pno, new.orderQty, new.orderDate) 
+		ON DUPLICATE KEY UPDATE salesQty = salesQty + new.orderQty;
+    UPDATE stock set currentQty =  currentQty - new.orderQty where pno = new.pno; #subtract stock table qty
+END $$ 
+DELIMITER ;
+
+
+
+DROP TRIGGER IF EXISTS `dbfinal`. `orderCanecl_BEFORE_Delete`;
+DELIMITER $$ 
+use `dbfinal`$$
+CREATE DEFINER = CURRENT_USER TRIGGER `dbfinal`. `orderCanecl_BEFORE_Delete` 
+    BEFORE DELETE ON `order` FOR EACH ROW
+BEGIN 
+	insert into orderCancel values(old.ono, old.pno, old.orderQty, old.orderDate, old.orderDate) 
+		ON DUPLICATE KEY UPDATE orderQty = orderQty + old.orderQty;
+	UPDATE sales set salesQty =  salesQty + old.orderQty where pno = old.pno; #re-add sales table qty
+    UPDATE stock set currentQty =  currentQty + old.orderQty where pno = old.pno; #re-add stock table qty
+END $$ 
+DELIMITER ;
