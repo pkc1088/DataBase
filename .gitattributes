@@ -1,3 +1,4 @@
 *.sql linguist-language=SQL
 MySQL/** linguist-documentation=false
 MySQL/** linguist-vendored=false
+*.sql linguist-detectable=true
